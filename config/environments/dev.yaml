@@ -1,1 +1,5 @@
 quota_hot_threshold: 0.9
+ecs_running_ratio_critical: 0.4
+dependency_ok_values:
+  - ok
+  - healthy

@@ -10,6 +10,7 @@ def render_markdown(report: dict) -> str:
         f"- environment: `{report['environment']}`",
         f"- workload: `{report['workload'].get('name', 'unknown')}`",
         f"- severity: `{report['severity']}`",
+        f"- impact: `{report['impact_classification']}`",
         f"- health_score: `{report['health_score']}`",
         "",
         "## Diagnóstico resumido",
@@ -21,14 +22,16 @@ def render_markdown(report: dict) -> str:
     ]
     for item in report["issues"]:
         lines.extend(
-            [
-                f"### {item['title']}",
-                f"- severidade: `{item['severity']}`",
-                f"- impacto: {item['impact']}",
-                f"- causas prováveis: {', '.join(item['probable_causes'])}",
-                f"- próximos passos: {', '.join(item['next_steps'])}",
-                f"- evidências: `{json.dumps(item['evidence'], ensure_ascii=False)}`",
-                "",
+                [
+                    f"### {item['title']}",
+                    f"- severidade: `{item['severity']}`",
+                    f"- categoria: `{item['category']}`",
+                    f"- confiança: `{item['confidence']}`",
+                    f"- impacto: {item['impact']}",
+                    f"- causas prováveis: {', '.join(item['probable_causes'])}",
+                    f"- próximos passos: {', '.join(item['next_steps'])}",
+                    f"- evidências: `{json.dumps(item['evidence'], ensure_ascii=False)}`",
+                    "",
             ]
         )
     return "\n".join(lines).strip() + "\n"
@@ -36,7 +39,7 @@ def render_markdown(report: dict) -> str:
 
 def render_html(report: dict) -> str:
     issue_items = "".join(
-        f"<li><strong>{item['title']}</strong> ({item['severity']})<br>{item['impact']}</li>"
+        f"<li><strong>{item['title']}</strong> ({item['severity']}/{item['confidence']})<br>{item['impact']}</li>"
         for item in report["issues"]
     )
     return f"""<!doctype html>
@@ -51,13 +54,14 @@ def render_html(report: dict) -> str:
     </style>
   </head>
   <body>
-    <div class="card">
-      <h1>{report['title']}</h1>
-      <p class="metric">Severity: {report['severity']}</p>
-      <p class="metric">Health score: {report['health_score']}</p>
-      <h2>Achados</h2>
-      <ul>{issue_items}</ul>
-    </div>
-  </body>
+      <div class="card">
+        <h1>{report['title']}</h1>
+        <p class="metric">Severity: {report['severity']}</p>
+        <p class="metric">Impact: {report['impact_classification']}</p>
+        <p class="metric">Health score: {report['health_score']}</p>
+        <h2>Achados</h2>
+        <ul>{issue_items}</ul>
+      </div>
+    </body>
 </html>
 """
