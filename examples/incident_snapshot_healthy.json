@@ -1,0 +1,46 @@
+{
+  "environment": "prod",
+  "workload": {
+    "type": "ecs",
+    "name": "payments-api",
+    "cluster": "prod-apps"
+  },
+  "ecs": {
+    "service_desired_count": 2,
+    "service_running_count": 2,
+    "deployments_in_progress": 0,
+    "task_failures": [],
+    "secrets_pull_errors": []
+  },
+  "alb": {
+    "target_groups": [
+      {
+        "name": "payments-api-tg",
+        "healthy_targets": 2,
+        "unhealthy_targets": 0,
+        "health_check_path": "/healthz"
+      }
+    ]
+  },
+  "dependencies": {
+    "sts": "ok",
+    "ecr": "ok",
+    "secrets_manager": "ok",
+    "ssm": "ok",
+    "cloudwatch": "ok"
+  },
+  "efs": {
+    "mount_error": ""
+  },
+  "network": {
+    "route_mismatch": false,
+    "sg_mismatch": false,
+    "nacl_mismatch": false,
+    "dns_private_resolution": "ok"
+  },
+  "iam": {
+    "task_execution_role": "ok",
+    "irsa": "ok"
+  },
+  "quotas": []
+}

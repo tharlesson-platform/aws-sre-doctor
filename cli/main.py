@@ -11,6 +11,7 @@ from rich.panel import Panel
 from checks.catalog import run_checks
 from core.config import load_environment_config
 from reporters.renderers import render_html, render_markdown
+from core.snapshots import build_snapshot_template
 
 
 app = typer.Typer(help="Operational troubleshooting CLI for AWS workloads.")
@@ -24,6 +25,46 @@ def run() -> None:
 @app.command()
 def version() -> None:
     console.print("0.1.0")
+
+
+@app.command()
+def init_snapshot(
+    output_path: Path = typer.Option(Path("incident_snapshot.json"), help="Path for the starter snapshot JSON/YAML."),
+    environment: str = typer.Option("prod", help="Environment name."),
+    workload_name: str = typer.Option("payments-api", help="Workload or service name."),
+    workload_type: str = typer.Option("ecs", help="ecs|eks|service"),
+    cluster: str = typer.Option("prod-apps", help="Cluster or control plane name."),
+    scenario: str = typer.Option("healthy-baseline", help="healthy-baseline|ecs-degraded"),
+) -> None:
+    try:
+        snapshot = build_snapshot_template(
+            environment=environment,
+            workload_type=workload_type,
+            workload_name=workload_name,
+            cluster=cluster,
+            scenario=scenario,
+        )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    if output_path.suffix.lower() in {".yaml", ".yml"}:
+        payload = yaml.safe_dump(snapshot, sort_keys=False, allow_unicode=False)
+    else:
+        payload = json.dumps(snapshot, indent=2)
+    output_path.write_text(payload, encoding="utf-8")
+
+    panel = Panel.fit(
+        (
+            f"snapshot={output_path.resolve()}\n"
+            f"scenario={scenario}\n"
+            f"workload={workload_name}\n"
+            f"next=aws-sre-doctor analyze --input-path {output_path} --environment {environment}"
+        ),
+        title="AWS SRE Doctor Snapshot",
+    )
+    console.print(panel)
+    console.print("Preencha somente os campos que representam o sintoma real do incidente.")
 
 
 @app.command()

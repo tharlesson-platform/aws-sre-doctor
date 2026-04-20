@@ -41,10 +41,64 @@ python -m pip install -e .[dev]
 aws-sre-doctor analyze --input-path examples/incident_snapshot.json --environment prod
 ```
 
+## Como gerar o incident_snapshot na prática
+
+O caminho mais simples agora e gerar um snapshot-base e editar so o que esta acontecendo no incidente:
+
+```bash
+aws-sre-doctor init-snapshot \
+  --output-path incident_snapshot.json \
+  --environment prod \
+  --workload-name payments-api \
+  --cluster prod-apps
+```
+
+Isso cria um JSON "saudavel" com a estrutura certa. A partir dai voce altera apenas os sintomas observados.
+
+Se quiser um exemplo ja degradado para demo ou treinamento:
+
+```bash
+aws-sre-doctor init-snapshot \
+  --output-path incident_snapshot.demo.json \
+  --environment prod \
+  --workload-name payments-api \
+  --cluster prod-apps \
+  --scenario ecs-degraded
+```
+
+Depois rode:
+
+```bash
+aws-sre-doctor analyze --input-path incident_snapshot.json --environment prod
+```
+
+Mapeamento pratico para preencher o snapshot com dados reais:
+
+- `ecs.service_desired_count` e `ecs.service_running_count`: saem de `aws ecs describe-services`
+- `ecs.task_failures`: use `stoppedReason`, eventos do service ou erros recorrentes das tasks
+- `ecs.secrets_pull_errors`: registre erros como `AccessDeniedException`, `ResourceNotFoundException` ou timeout
+- `alb.target_groups[*].healthy_targets` e `unhealthy_targets`: saem de `aws elbv2 describe-target-health`
+- `dependencies`: marque `ok`, `timeout`, `access_denied` ou outro estado observavel para STS, ECR, Secrets Manager, SSM e CloudWatch
+- `efs.mount_error`: copie a mensagem real do mount quando existir
+- `network.route_mismatch`, `sg_mismatch`, `nacl_mismatch`: marque `true` apenas quando voce confirmar inconsistencia
+- `network.dns_private_resolution`: use `ok` ou `fail`
+- `iam.task_execution_role` e `iam.irsa`: descreva o problema encontrado ou mantenha `ok`
+- `quotas`: adicione apenas quotas perto do limite, por exemplo utilizacao acima de 85%
+
+Um fluxo bem pratico fica assim:
+
+1. Gere a base com `init-snapshot`
+2. Olhe ECS/ALB/AWS CLI e preencha somente os sintomas reais
+3. Rode `analyze`
+4. Use o markdown/html gerado para handoff ou postmortem
+
+Guia detalhado com comandos AWS CLI: `docs/snapshot-generation.md`
+
 ## Exemplos reais
 
 - `aws-sre-doctor analyze --input-path examples/incident_snapshot.json --environment prod`
 - `AWS_REGION=us-east-1 AWS_PROFILE=platform aws-sre-doctor analyze --input-path examples/incident_snapshot.json --environment dev`
+- `aws-sre-doctor init-snapshot --output-path incident_snapshot.yaml --environment stage --workload-name billing-api --cluster stage-apps`
 
 ## Como isso ajuda SREs no dia a dia
 
