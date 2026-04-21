@@ -19,6 +19,46 @@ def test_analyze_generates_reports() -> None:
     assert "AWS SRE Doctor" in result.stdout
 
 
+def test_analyze_generates_portable_bundle(tmp_path: Path) -> None:
+    runner = CliRunner()
+    fixture = Path("examples/incident_snapshot.json")
+    output_dir = tmp_path / "artifacts"
+    bundle_dir = tmp_path / "bundles"
+    result = runner.invoke(
+        app,
+        [
+            "analyze",
+            "--input-path",
+            str(fixture),
+            "--environment",
+            "prod",
+            "--output-dir",
+            str(output_dir),
+            "--report-name",
+            "incident-prod",
+            "--bundle-dir",
+            str(bundle_dir),
+            "--region",
+            "us-east-1",
+            "--profile",
+            "platform",
+            "--account-alias",
+            "prod-platform",
+        ],
+    )
+    assert result.exit_code == 0, result.stdout
+    bundle_root = bundle_dir / "incident-prod"
+    manifest = json.loads((bundle_root / "bundle-manifest.json").read_text(encoding="utf-8"))
+    assert (bundle_root / "incident_snapshot.json").exists()
+    assert (bundle_root / "diagnosis.json").exists()
+    assert (bundle_root / "diagnosis.md").exists()
+    assert (bundle_root / "diagnosis.html").exists()
+    assert manifest["bundle_metadata"]["region"] == "us-east-1"
+    assert manifest["bundle_metadata"]["profile"] == "platform"
+    assert manifest["bundle_metadata"]["account_alias"] == "prod-platform"
+    assert "Bundle portatil gerado em" in result.stdout
+
+
 def test_init_snapshot_generates_template_json(tmp_path: Path) -> None:
     runner = CliRunner()
     output_path = tmp_path / "incident_snapshot.json"

@@ -10,6 +10,7 @@ from rich.console import Console
 from rich.panel import Panel
 
 from checks.catalog import run_checks
+from core.bundles import materialize_incident_bundle
 from core.config import load_environment_config
 from core.github_issues import GitHubIssuePublisher, build_issue_body, build_issue_title
 from core.live_collectors import AWSLiveCollector
@@ -178,6 +179,10 @@ def analyze(
     output_dir: Path = typer.Option(Path("artifacts"), help="Directory for generated reports."),
     output_format: str = typer.Option("all", help="all|json|markdown|html"),
     report_name: str = typer.Option("diagnosis", help="Base name for generated files."),
+    bundle_dir: Path | None = typer.Option(None, help="Optional directory where a portable incident bundle will be written."),
+    region: str | None = typer.Option(None, help="AWS region to include in bundle metadata."),
+    profile: str | None = typer.Option(None, help="AWS profile to include in bundle metadata."),
+    account_alias: str | None = typer.Option(None, help="AWS account alias to include in bundle metadata."),
 ) -> None:
     snapshot = _load_serialized_file(input_path)
     config = load_environment_config(environment)
@@ -202,3 +207,14 @@ def analyze(
     )
     console.print(panel)
     console.print(f"Relatórios gerados em {output_dir.resolve()}")
+    if bundle_dir is not None:
+        bundle_root = materialize_incident_bundle(
+            bundle_dir=bundle_dir,
+            report_name=report_name,
+            input_path=input_path,
+            report=report,
+            region=region,
+            profile=profile,
+            account_alias=account_alias,
+        )
+        console.print(f"Bundle portatil gerado em {bundle_root.resolve()}")

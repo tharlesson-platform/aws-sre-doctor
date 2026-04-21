@@ -61,6 +61,33 @@ Depois rode:
 aws-sre-doctor analyze --input-path incident_snapshot.live.json --environment prod
 ```
 
+## Incident bundle portatil
+
+Agora o `analyze` tambem pode materializar um bundle portatil para handoff, postmortem ou ingestao por ferramentas irmas:
+
+```bash
+aws-sre-doctor analyze \
+  --input-path examples/incident_snapshot.json \
+  --environment prod \
+  --report-name payments-prod \
+  --bundle-dir bundles \
+  --region us-east-1 \
+  --profile platform \
+  --account-alias prod-platform
+```
+
+Estrutura gerada:
+
+```text
+bundles/
+  payments-prod/
+    incident_snapshot.json
+    diagnosis.json
+    diagnosis.md
+    diagnosis.html
+    bundle-manifest.json
+```
+
 Agora a coleta live também consegue:
 
 - coletar sinais extras de rede em `route tables`, `security groups`, `NACLs` e `DNS do VPC`
