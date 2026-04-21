@@ -41,6 +41,16 @@ python -m pip install -e .[dev]
 aws-sre-doctor analyze --input-path examples/incident_snapshot.json --environment prod
 ```
 
+## Reproducao guiada
+
+- Primeiro passo recomendado:
+  - `aws-sre-doctor analyze --input-path examples/incident_snapshot_healthy.json --environment prod --report-name healthy`
+- Segundo passo recomendado:
+  - `aws-sre-doctor analyze --input-path examples/incident_snapshot.json --environment prod --report-name degraded`
+- Para reproduzir com mais seguranca:
+  - consulte `examples/README.md`
+  - siga `docs/reproduction-guide.md`
+
 ## Como gerar o incident_snapshot na prática
 
 O caminho mais simples agora e gerar um snapshot-base e editar so o que esta acontecendo no incidente:
@@ -99,6 +109,7 @@ Guia detalhado com comandos AWS CLI: `docs/snapshot-generation.md`
 - `aws-sre-doctor analyze --input-path examples/incident_snapshot.json --environment prod`
 - `AWS_REGION=us-east-1 AWS_PROFILE=platform aws-sre-doctor analyze --input-path examples/incident_snapshot.json --environment dev`
 - `aws-sre-doctor init-snapshot --output-path incident_snapshot.yaml --environment stage --workload-name billing-api --cluster stage-apps`
+- `aws-sre-doctor analyze --input-path examples/incident_snapshot_healthy.json --environment prod --report-name healthy`
 
 ## Como isso ajuda SREs no dia a dia
 
