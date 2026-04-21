@@ -22,4 +22,4 @@ def run_checks(snapshot: dict, config: dict) -> dict:
     issues: list[dict] = []
     for check in CHECK_PIPELINE:
         issues.extend(check(snapshot, config))
-    return aggregate_report(snapshot, issues)
+    return aggregate_report(snapshot, issues, config)

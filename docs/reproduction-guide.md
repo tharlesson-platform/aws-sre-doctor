@@ -71,6 +71,19 @@ aws-sre-doctor collect-live \
 
 Esse comando acelera muito o bootstrap do diagnostico quando voce ja sabe quais recursos quer observar em AWS.
 
+### 6. Ver a correlacao operacional e gerar issue preview
+
+```bash
+aws-sre-doctor analyze --input-path examples/incident_snapshot_multi_service.json --environment prod --report-name multi
+aws-sre-doctor export-github-issue --report-path artifacts/multi.json --repo tharlesson-platform/aws-sre-doctor --preview-path artifacts/multi-github-issue.md --dry-run
+```
+
+Esse fluxo e o mais util para mostrar:
+
+- correlacao entre alarmes e mudancas recentes
+- seccao de hipoteses correlacionadas no markdown/html
+- issue pronta para handoff ou backlog
+
 ## Como preencher um snapshot sem sofrer
 
 - Use o comando `init-snapshot` para nunca comecar de um arquivo vazio.
@@ -105,4 +118,5 @@ Esse comando acelera muito o bootstrap do diagnostico quando voce ja sabe quais 
 4. Ler `artifacts/*.md` para entender a estrutura do diagnostico.
 5. Criar um snapshot proprio com `init-snapshot`.
 6. Testar `collect-live` em um workload controlado.
-7. Versionar novos cenarios em `examples/` quando forem uteis para treino ou onboarding.
+7. Gerar um preview de GitHub Issue para entender o formato de handoff.
+8. Versionar novos cenarios em `examples/` quando forem uteis para treino ou onboarding.

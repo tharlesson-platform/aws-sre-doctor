@@ -1,6 +1,6 @@
 # AWS SRE Doctor
 
-CLI profissional para troubleshooting operacional em AWS, com foco em diagnóstico rápido, coleta live e redução de MTTR.
+CLI profissional para troubleshooting operacional em AWS, com foco em diagnóstico rápido, coleta live, correlação operacional e redução de MTTR.
 
 ## Problema que resolve
 
@@ -10,9 +10,10 @@ CLI profissional para troubleshooting operacional em AWS, com foco em diagnósti
 
 ## Arquitetura
 
-- CLI com Typer para execução local, coleta live via boto3 e futura automação em pipeline.
+- CLI com Typer para execução local, coleta live via boto3, export para GitHub Issues e futura automação em pipeline.
 - Checks desacoplados em `checks/` para evoluir troubleshooting por domínio.
 - Reporters em markdown/json/html para operação, documentação e portfólio técnico.
+- Engine de correlação para cruzar alarmes ativos, mudanças recentes, rede e pressão de quota.
 
 ## Estrutura do projeto
 
@@ -58,6 +59,27 @@ Depois rode:
 
 ```bash
 aws-sre-doctor analyze --input-path incident_snapshot.live.json --environment prod
+```
+
+Agora a coleta live também consegue:
+
+- coletar sinais extras de rede em `route tables`, `security groups`, `NACLs` e `DNS do VPC`
+- capturar alarmes ativos relevantes em CloudWatch
+- sintetizar sinais de deploy ou mudança recente
+- coletar quotas relevantes por serviço quando `--collect-quotas` estiver habilitado
+
+Exemplo com quotas:
+
+```bash
+aws-sre-doctor collect-live \
+  --output-path incident_snapshot.live.json \
+  --environment prod \
+  --region us-east-1 \
+  --workload-type ecs \
+  --workload-name payments-api \
+  --cluster prod-apps \
+  --ecs-service payments-api \
+  --collect-quotas
 ```
 
 ## Reproducao guiada
@@ -128,6 +150,8 @@ Mapeamento pratico para preencher o snapshot com dados reais:
 - `network.dns_private_resolution`: use `ok` ou `fail`
 - `iam.task_execution_role` e `iam.irsa`: descreva o problema encontrado ou mantenha `ok`
 - `quotas`: adicione apenas quotas perto do limite, por exemplo utilizacao acima de 85%
+- `metadata.alarm_events`: use quando quiser enriquecer o snapshot com alarmes relevantes
+- `metadata.deploy_events`: use para marcar rollout, change window ou alteração recente
 
 Um fluxo bem pratico fica assim:
 
@@ -139,6 +163,8 @@ Um fluxo bem pratico fica assim:
 Guia detalhado com comandos AWS CLI: `docs/snapshot-generation.md`
 
 Guia de coleta live via boto3: `docs/live-collection.md`
+
+Guia de export para GitHub Issues: `docs/github-issues.md`
 
 ## Exemplos reais
 
@@ -153,19 +179,28 @@ Guia de coleta live via boto3: `docs/live-collection.md`
 - `aws-sre-doctor analyze --input-path examples/incident_snapshot_iam.json --environment prod --report-name iam`
 - `aws-sre-doctor analyze --input-path examples/incident_snapshot_multi_service.json --environment prod --report-name multi`
 - `aws-sre-doctor collect-live --output-path incident_snapshot.live.json --environment prod --region us-east-1 --workload-type eks --workload-name payments-cluster --eks-cluster-name payments-eks-prod`
+- `aws-sre-doctor export-github-issue --report-path artifacts/multi.json --repo tharlesson-platform/aws-sre-doctor --preview-path artifacts/multi-github-issue.md --dry-run`
 
 ## Como isso ajuda SREs no dia a dia
 
 - Acelera triagem inicial quando ECS, EC2, EKS, RDS, ALB e dependências AWS falham em conjunto.
 - Padroniza diagnóstico resumido, causas prováveis e próximos passos para reduzir MTTR.
 - Permite partir de dados reais com coleta live via boto3 quando o incidente ja esta acontecendo.
+- Ajuda a cruzar alarmes, mudanças recentes, rede e quota sem depender só de memória operacional.
 - Cria artefatos reutilizáveis em postmortems, runbooks e demos técnicas.
+- Facilita abrir issues com contexto suficiente para follow-up do incidente.
 
-## Roadmap
+## Roadmap entregue nesta versão
 
-- Enriquecer coleta live com mais sinais de rede e quotas.
+- Coleta live enriquecida com sinais de rede e quotas.
 - Correlação automática com eventos de deploy e alarmes.
 - Export de diagnóstico para GitHub Issues.
+
+## Próximas evoluções sugeridas
+
+- Incluir coleta opcional de eventos de deploy a partir de GitHub Actions ou CodePipeline.
+- Exportar achados diretamente para Slack ou Jira.
+- Adicionar correlação temporal mais fina com janela ajustável por ambiente.
 
 ## Licença
 

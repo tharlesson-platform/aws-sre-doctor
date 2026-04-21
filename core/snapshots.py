@@ -12,6 +12,16 @@ BASELINE_TEMPLATE = {
     },
     "metadata": {
         "collection_mode": "snapshot-template",
+        "generated_at": "2026-04-20T12:00:00+00:00",
+        "alarm_events": [],
+        "deploy_events": [],
+        "network_assessment": {
+            "route_findings": [],
+            "security_group_findings": [],
+            "nacl_findings": [],
+            "dns_findings": [],
+        },
+        "dependency_details": {},
     },
     "ecs": {
         "service_desired_count": 0,
@@ -105,6 +115,26 @@ ECS_DEGRADED = {
         "type": "ecs",
         "name": "payments-api",
         "cluster": "prod-apps",
+    },
+    "metadata": {
+        "alarm_events": [
+            {
+                "name": "payments-api-high-5xx",
+                "state": "ALARM",
+                "timestamp": "2026-04-20T11:49:00+00:00",
+                "reason": "5xx above threshold for 10 minutes",
+            }
+        ],
+        "deploy_events": [
+            {
+                "source": "ecs",
+                "type": "deployment",
+                "resource": "payments-api",
+                "status": "in_progress",
+                "timestamp": "2026-04-20T11:42:00+00:00",
+                "summary": "New task definition rollout in progress",
+            }
+        ],
     },
     "ecs": {
         "service_desired_count": 4,
@@ -345,6 +375,40 @@ MULTI_SERVICE_DEGRADED = {
         "type": "service",
         "name": "payments-platform",
         "cluster": "prod-apps",
+    },
+    "metadata": {
+        "alarm_events": [
+            {
+                "name": "payments-platform-latency-p99",
+                "state": "ALARM",
+                "timestamp": "2026-04-20T11:50:00+00:00",
+                "reason": "Latency p99 above target",
+            },
+            {
+                "name": "payments-platform-rds-storage",
+                "state": "ALARM",
+                "timestamp": "2026-04-20T11:52:00+00:00",
+                "reason": "Free storage space below threshold",
+            },
+        ],
+        "deploy_events": [
+            {
+                "source": "ecs",
+                "type": "deployment",
+                "resource": "payments-platform",
+                "status": "in_progress",
+                "timestamp": "2026-04-20T11:40:00+00:00",
+                "summary": "Canary rollout started before degradation",
+            },
+            {
+                "source": "rds",
+                "type": "configuration_change",
+                "resource": "payments-prod-db",
+                "status": "modifying",
+                "timestamp": "2026-04-20T11:44:00+00:00",
+                "summary": "Pending DB instance class change detected",
+            },
+        ],
     },
     "ecs": ECS_DEGRADED["ecs"],
     "alb": LB_TARGET_GROUP_DEGRADED["alb"],

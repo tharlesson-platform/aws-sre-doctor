@@ -5,6 +5,33 @@ def test_run_checks_builds_critical_report() -> None:
     snapshot = {
         "environment": "prod",
         "workload": {"name": "payments-api", "type": "ecs"},
+        "metadata": {
+            "generated_at": "2026-04-20T12:00:00+00:00",
+            "alarm_events": [
+                {
+                    "name": "payments-api-5xx",
+                    "state": "ALARM",
+                    "timestamp": "2026-04-20T11:55:00+00:00",
+                    "reason": "5xx above threshold",
+                }
+            ],
+            "deploy_events": [
+                {
+                    "source": "ecs",
+                    "type": "deployment",
+                    "resource": "payments-api",
+                    "status": "in_progress",
+                    "timestamp": "2026-04-20T11:50:00+00:00",
+                    "summary": "New task definition rollout in progress",
+                }
+            ],
+            "network_assessment": {
+                "route_findings": [{"summary": "Blackhole route found in rtb-123"}],
+                "security_group_findings": [],
+                "nacl_findings": [],
+                "dns_findings": [],
+            },
+        },
         "ecs": {
             "service_desired_count": 4,
             "service_running_count": 1,
@@ -59,12 +86,25 @@ def test_run_checks_builds_critical_report() -> None:
     assert any(item["category"] == "ec2" for item in report["issues"])
     assert any(item["category"] == "eks" for item in report["issues"])
     assert any(item["category"] == "rds" for item in report["issues"])
+    assert report["summary"]["correlated_signals"] >= 3
+    assert any(item["title"] == "Deploy recente pode estar correlacionado com os alarmes" for item in report["correlations"]["correlated_hypotheses"])
 
 
 def test_run_checks_keeps_healthy_snapshot_without_iam_false_positive() -> None:
     snapshot = {
         "environment": "prod",
         "workload": {"name": "payments-api", "type": "ecs"},
+        "metadata": {
+            "generated_at": "2026-04-20T12:00:00+00:00",
+            "alarm_events": [],
+            "deploy_events": [],
+            "network_assessment": {
+                "route_findings": [],
+                "security_group_findings": [],
+                "nacl_findings": [],
+                "dns_findings": [],
+            },
+        },
         "ecs": {"service_desired_count": 2, "service_running_count": 2},
         "alb": {"target_groups": [{"name": "payments-tg", "unhealthy_targets": 0, "healthy_targets": 2}]},
         "dependencies": {"sts": "ok", "ecr": "ok", "secrets_manager": "ok", "ssm": "ok", "cloudwatch": "ok"},
@@ -84,3 +124,4 @@ def test_run_checks_keeps_healthy_snapshot_without_iam_false_positive() -> None:
     report = run_checks(snapshot, config)
     assert report["issues"] == []
     assert report["severity"] == "low"
+    assert report["summary"]["correlated_signals"] == 0

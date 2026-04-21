@@ -6,7 +6,59 @@
     "cluster": "prod-apps"
   },
   "metadata": {
-    "collection_mode": "snapshot-template"
+    "collection_mode": "snapshot-template",
+    "generated_at": "2026-04-20T12:00:00+00:00",
+    "alarm_events": [
+      {
+        "name": "payments-platform-latency-p99",
+        "state": "ALARM",
+        "timestamp": "2026-04-20T11:50:00+00:00",
+        "reason": "Latency p99 above target"
+      },
+      {
+        "name": "payments-platform-rds-storage",
+        "state": "ALARM",
+        "timestamp": "2026-04-20T11:52:00+00:00",
+        "reason": "Free storage space below threshold"
+      }
+    ],
+    "deploy_events": [
+      {
+        "source": "ecs",
+        "type": "deployment",
+        "resource": "payments-platform",
+        "status": "in_progress",
+        "timestamp": "2026-04-20T11:40:00+00:00",
+        "summary": "Canary rollout started before degradation"
+      },
+      {
+        "source": "rds",
+        "type": "configuration_change",
+        "resource": "payments-prod-db",
+        "status": "modifying",
+        "timestamp": "2026-04-20T11:44:00+00:00",
+        "summary": "Pending DB instance class change detected"
+      }
+    ],
+    "network_assessment": {
+      "route_findings": [
+        {
+          "summary": "Blackhole route found in rtb-payments-private-a"
+        }
+      ],
+      "security_group_findings": [
+        {
+          "summary": "Security group sg-payments-platform has no egress rules."
+        }
+      ],
+      "nacl_findings": [],
+      "dns_findings": [
+        {
+          "summary": "VPC vpc-payments-prod has DNS hostnames disabled."
+        }
+      ]
+    },
+    "dependency_details": {}
   },
   "ecs": {
     "service_desired_count": 4,

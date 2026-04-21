@@ -2,6 +2,7 @@ quota_hot_threshold: 0.9
 ecs_running_ratio_critical: 0.4
 ec2_cpu_hot_threshold: 90
 rds_storage_hot_threshold: 0.9
+correlation_recent_change_minutes: 240
 dependency_ok_values:
   - ok
   - healthy

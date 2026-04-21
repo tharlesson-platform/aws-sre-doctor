@@ -21,7 +21,7 @@ Use estes exemplos como ponto de partida antes de tentar montar um snapshot real
     - `artifacts/healthy.html`
 
 - `incident_snapshot.json`
-  - Cenario degradado com sinais em ECS, ALB, dependencias AWS, IAM, rede e quota.
+  - Cenario degradado com sinais em ECS, ALB, dependencias AWS, IAM, rede, quota e correlacao com alarme/deploy.
   - Comando:
     - `aws-sre-doctor analyze --input-path examples/incident_snapshot.json --environment prod --report-name degraded`
   - Saida esperada:
@@ -55,9 +55,10 @@ Use estes exemplos como ponto de partida antes de tentar montar um snapshot real
     - `aws-sre-doctor analyze --input-path examples/incident_snapshot_iam.json --environment prod --report-name iam`
 
 - `incident_snapshot_multi_service.json`
-  - Cenario combinado para demo ou tabletop exercise.
+  - Cenario combinado para demo ou tabletop exercise, com alarmes ativos e eventos de mudanca recentes.
   - Comando:
     - `aws-sre-doctor analyze --input-path examples/incident_snapshot_multi_service.json --environment prod --report-name multi`
+    - `aws-sre-doctor export-github-issue --report-path artifacts/multi.json --repo tharlesson-platform/aws-sre-doctor --preview-path artifacts/multi-github-issue.md --dry-run`
 
 ## Exemplo de colaboracao
 
@@ -92,4 +93,16 @@ Depois rode:
 
 ```bash
 aws-sre-doctor analyze --input-path incident_snapshot.live.json --environment prod
+```
+
+## Exemplo de handoff via GitHub Issue
+
+Depois de gerar um relatorio JSON:
+
+```bash
+aws-sre-doctor export-github-issue \
+  --report-path artifacts/degraded.json \
+  --repo tharlesson-platform/aws-sre-doctor \
+  --preview-path artifacts/degraded-github-issue.md \
+  --dry-run
 ```

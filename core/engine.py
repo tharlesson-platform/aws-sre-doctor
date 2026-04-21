@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from collections import OrderedDict
 
+from core.correlations import build_correlations
+
 
 PENALTIES = {"low": 5, "medium": 10, "high": 18, "critical": 28}
 SEVERITY_PRIORITY = ("critical", "high", "medium", "low")
@@ -13,7 +15,7 @@ IMPACT_BY_SEVERITY = {
 }
 
 
-def aggregate_report(snapshot: dict, issues: list[dict]) -> dict:
+def aggregate_report(snapshot: dict, issues: list[dict], config: dict | None = None) -> dict:
     severity = "low"
     for value in SEVERITY_PRIORITY:
         if any(item["severity"] == value for item in issues):
@@ -24,6 +26,7 @@ def aggregate_report(snapshot: dict, issues: list[dict]) -> dict:
     probable_causes = list(OrderedDict.fromkeys(cause for item in issues for cause in item["probable_causes"]))
     next_steps = list(OrderedDict.fromkeys(step for item in issues for step in item["next_steps"]))
     categories = list(OrderedDict.fromkeys(item["category"] for item in issues))
+    correlations = build_correlations(snapshot, issues, config or {})
 
     summary = "Operação estável" if not issues else "Há indícios fortes de degradação operacional"
     if severity == "critical":
@@ -39,8 +42,10 @@ def aggregate_report(snapshot: dict, issues: list[dict]) -> dict:
             "issues_found": len(issues),
             "diagnosis": summary,
             "categories": categories,
+            "correlated_signals": len(correlations["correlated_hypotheses"]),
         },
         "issues": issues,
         "possible_causes": probable_causes,
         "suggested_next_steps": next_steps,
+        "correlations": correlations,
     }

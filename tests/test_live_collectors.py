@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from botocore.exceptions import ClientError
 
 from core.live_collectors import AWSLiveCollector
@@ -26,7 +28,19 @@ class FakeSSMClient:
 
 
 class FakeCloudWatchClient:
-    def describe_alarms(self, MaxRecords: int):
+    def describe_alarms(self, MaxRecords: int, StateValue: str | None = None):
+        if StateValue == "ALARM":
+            return {
+                "MetricAlarms": [
+                    {
+                        "AlarmName": "payments-api-5xx",
+                        "AlarmDescription": "payments-api error rate high",
+                        "StateValue": "ALARM",
+                        "StateUpdatedTimestamp": datetime(2026, 4, 20, 11, 55, tzinfo=UTC),
+                        "StateReason": "Threshold crossed",
+                    }
+                ]
+            }
         return {"MetricAlarms": []}
 
     def get_metric_statistics(self, **kwargs):
@@ -44,7 +58,14 @@ class FakeECSClient:
                     "desiredCount": 2,
                     "runningCount": 1,
                     "status": "ACTIVE",
-                    "deployments": [{"rolloutState": "IN_PROGRESS"}],
+                    "deployments": [
+                        {
+                            "id": "ecs-svc/123",
+                            "rolloutState": "IN_PROGRESS",
+                            "updatedAt": datetime(2026, 4, 20, 11, 52, tzinfo=UTC),
+                            "rolloutStateReason": "Deployment started after task definition update",
+                        }
+                    ],
                     "events": [{"message": "service unable to reach steady state"}],
                     "loadBalancers": [
                         {"targetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/payments-api/abcdef"}
@@ -84,11 +105,14 @@ class FakeECSClient:
 
 
 class FakeELBV2Client:
-    def describe_target_groups(self, TargetGroupArns: list[str]):
+    def describe_target_groups(self, TargetGroupArns: list[str] | None = None):
+        arns = TargetGroupArns or [
+            "arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/payments-api/abcdef"
+        ]
         return {
             "TargetGroups": [
                 {
-                    "TargetGroupArn": TargetGroupArns[0],
+                    "TargetGroupArn": arns[0],
                     "TargetGroupName": "payments-api-tg",
                     "TargetType": "ip",
                     "HealthCheckPath": "/healthz",
@@ -109,11 +133,14 @@ class FakeELBV2Client:
             ]
         }
 
-    def describe_load_balancers(self, LoadBalancerArns: list[str]):
+    def describe_load_balancers(self, LoadBalancerArns: list[str] | None = None):
+        arns = LoadBalancerArns or [
+            "arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/payments-edge/123abc"
+        ]
         return {
             "LoadBalancers": [
                 {
-                    "LoadBalancerArn": LoadBalancerArns[0],
+                    "LoadBalancerArn": arns[0],
                     "LoadBalancerName": "payments-edge",
                     "Type": "application",
                     "Scheme": "internet-facing",
@@ -165,13 +192,14 @@ class FakeIAMClient:
 
 
 class FakeEC2Client:
-    def describe_instances(self, InstanceIds: list[str]):
+    def describe_instances(self, InstanceIds: list[str] | None = None, Filters: list[dict] | None = None):
+        instance_ids = InstanceIds or ["i-0123456789abcdef0"]
         return {
             "Reservations": [
                 {
                     "Instances": [
                         {
-                            "InstanceId": InstanceIds[0],
+                            "InstanceId": instance_ids[0],
                             "State": {"Name": "running"},
                             "InstanceType": "t3.large",
                             "SubnetId": "subnet-ec2",
@@ -194,6 +222,41 @@ class FakeEC2Client:
                 }
             ]
         }
+
+    def describe_route_tables(self, Filters: list[dict]):
+        return {
+            "RouteTables": [
+                {
+                    "RouteTableId": "rtb-123",
+                    "Routes": [{"DestinationCidrBlock": "0.0.0.0/0", "State": "blackhole"}],
+                }
+            ]
+        }
+
+    def describe_security_groups(self, GroupIds: list[str]):
+        return {
+            "SecurityGroups": [
+                {
+                    "GroupId": GroupIds[0],
+                    "IpPermissionsEgress": [],
+                }
+            ]
+        }
+
+    def describe_network_acls(self, Filters: list[dict]):
+        return {
+            "NetworkAcls": [
+                {
+                    "NetworkAclId": "acl-123",
+                    "Entries": [{"RuleAction": "deny", "Protocol": "-1"}],
+                }
+            ]
+        }
+
+    def describe_vpc_attribute(self, VpcId: str, Attribute: str):
+        if Attribute == "enableDnsSupport":
+            return {"EnableDnsSupport": {"Value": True}}
+        return {"EnableDnsHostnames": {"Value": False}}
 
 
 class FakeEKSClient:
@@ -244,11 +307,12 @@ class FakeEKSClient:
 
 
 class FakeRDSClient:
-    def describe_db_instances(self, DBInstanceIdentifier: str):
+    def describe_db_instances(self, DBInstanceIdentifier: str | None = None):
+        identifier = DBInstanceIdentifier or "payments-prod-db"
         return {
             "DBInstances": [
                 {
-                    "DBInstanceIdentifier": DBInstanceIdentifier,
+                    "DBInstanceIdentifier": identifier,
                     "DBInstanceStatus": "modifying",
                     "Engine": "postgres",
                     "MultiAZ": True,
@@ -267,7 +331,9 @@ class FakeRDSClient:
 
 
 class FakeEFSClient:
-    def describe_file_systems(self, FileSystemId: str):
+    def describe_file_systems(self, FileSystemId: str | None = None):
+        if FileSystemId == "fs-all" or FileSystemId is None:
+            return {"FileSystems": [{"FileSystemId": "fs-all"}]}
         return {
             "FileSystems": [
                 {
@@ -294,6 +360,21 @@ class FakeEFSClient:
         return {"SecurityGroups": ["sg-efs"]}
 
 
+class FakeServiceQuotasClient:
+    def list_service_quotas(self, ServiceCode: str, MaxResults: int, NextToken: str | None = None):
+        quotas = {
+            "ecs": [{"QuotaName": "Services per cluster", "Value": 100}],
+            "ec2": [{"QuotaName": "Running On-Demand Standard (A, C, D, H, I, M, R, T, Z) instances", "Value": 20}],
+            "elasticloadbalancing": [
+                {"QuotaName": "Application Load Balancers per Region", "Value": 50},
+                {"QuotaName": "Target Groups per Region", "Value": 3000},
+            ],
+            "rds": [{"QuotaName": "DB instances", "Value": 40}],
+            "efs": [{"QuotaName": "File systems per region", "Value": 1000}],
+        }
+        return {"Quotas": quotas.get(ServiceCode, [])}
+
+
 def test_live_collector_collects_ecs_lb_iam_and_dependencies() -> None:
     collector = AWSLiveCollector(
         region_name="us-east-1",
@@ -307,6 +388,7 @@ def test_live_collector_collects_ecs_lb_iam_and_dependencies() -> None:
             "elbv2": FakeELBV2Client(),
             "iam": FakeIAMClient(),
             "efs": FakeEFSClient(),
+            "ec2": FakeEC2Client(),
         },
     )
 
@@ -316,6 +398,7 @@ def test_live_collector_collects_ecs_lb_iam_and_dependencies() -> None:
         workload_name="payments-api",
         cluster="prod-apps",
         ecs_service="payments-api",
+        collect_quotas=False,
     )
 
     assert snapshot["dependencies"]["sts"] == "ok"
@@ -324,6 +407,9 @@ def test_live_collector_collects_ecs_lb_iam_and_dependencies() -> None:
     assert snapshot["alb"]["target_groups"][0]["unhealthy_targets"] == 1
     assert snapshot["iam"]["task_execution_role"] == "missing_ecr_permissions"
     assert snapshot["efs"]["file_systems"][0]["mount_target_count"] == 1
+    assert snapshot["metadata"]["alarm_events"][0]["name"] == "payments-api-5xx"
+    assert snapshot["metadata"]["deploy_events"][0]["source"] == "ecs"
+    assert snapshot["network"]["route_mismatch"] is True
 
 
 def test_live_collector_collects_ec2_eks_and_rds() -> None:
@@ -335,6 +421,10 @@ def test_live_collector_collects_ec2_eks_and_rds() -> None:
             "eks": FakeEKSClient(),
             "rds": FakeRDSClient(),
             "iam": FakeIAMClient(),
+            "service-quotas": FakeServiceQuotasClient(),
+            "ecs": FakeECSClient(),
+            "elbv2": FakeELBV2Client(),
+            "efs": FakeEFSClient(),
         },
     )
 
@@ -346,9 +436,14 @@ def test_live_collector_collects_ec2_eks_and_rds() -> None:
         eks_cluster_name="payments-eks-prod",
         rds_instance_ids=["payments-prod-db"],
         collect_dependencies=False,
+        collect_quotas=True,
     )
 
     assert snapshot["ec2"]["instances"][0]["instance_status"] == "impaired"
     assert snapshot["eks"]["nodegroups"][0]["status"] == "DEGRADED"
     assert snapshot["rds"]["instances"][0]["storage_utilization"] == 0.75
     assert snapshot["iam"]["irsa"] == "ok"
+    assert snapshot["network"]["sg_mismatch"] is True
+    assert snapshot["network"]["nacl_mismatch"] is True
+    assert snapshot["network"]["dns_private_resolution"] == "fail"
+    assert any(item["name"] == "DB instances" for item in snapshot["quotas"])

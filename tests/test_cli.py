@@ -80,7 +80,19 @@ def test_collect_live_generates_snapshot_with_mocked_collector(tmp_path: Path, m
             return {
                 "environment": kwargs["environment"],
                 "workload": {"type": kwargs["workload_type"], "name": kwargs["workload_name"], "cluster": kwargs["cluster"]},
-                "metadata": {"collection_mode": "boto3-live", "region": self.region_name},
+                "metadata": {
+                    "collection_mode": "boto3-live",
+                    "region": self.region_name,
+                    "generated_at": "2026-04-20T12:00:00+00:00",
+                    "alarm_events": [],
+                    "deploy_events": [],
+                    "network_assessment": {
+                        "route_findings": [],
+                        "security_group_findings": [],
+                        "nacl_findings": [],
+                        "dns_findings": [],
+                    },
+                },
                 "ecs": {"service_desired_count": 2, "service_running_count": 1, "deployments_in_progress": 1, "task_failures": [], "secrets_pull_errors": []},
                 "ec2": {"instances": []},
                 "eks": {"nodegroups": [], "addons": []},
@@ -121,3 +133,54 @@ def test_collect_live_generates_snapshot_with_mocked_collector(tmp_path: Path, m
     assert payload["metadata"]["collection_mode"] == "boto3-live"
     assert payload["workload"]["name"] == "payments-api"
     assert "AWS SRE Doctor Live Collection" in result.stdout
+
+
+def test_export_github_issue_supports_dry_run_preview(tmp_path: Path) -> None:
+    runner = CliRunner()
+    report_path = tmp_path / "report.json"
+    preview_path = tmp_path / "issue.md"
+    report_path.write_text(
+        json.dumps(
+            {
+                "title": "AWS SRE Doctor",
+                "environment": "prod",
+                "workload": {"name": "payments-api"},
+                "health_score": 47,
+                "severity": "critical",
+                "impact_classification": "customer-visible",
+                "summary": {
+                    "issues_found": 2,
+                    "diagnosis": "Há falha crítica com potencial de impacto direto ao cliente",
+                    "categories": ["ecs", "network"],
+                    "correlated_signals": 2,
+                },
+                "issues": [],
+                "possible_causes": ["IAM permission mismatch"],
+                "suggested_next_steps": ["Revisar execution role"],
+                "correlations": {
+                    "alarm_events": [{"name": "payments-api-5xx", "reason": "5xx above threshold"}],
+                    "deploy_events": [{"source": "ecs", "resource": "payments-api", "timestamp": "2026-04-20T12:00:00+00:00", "summary": "Rollout in progress"}],
+                    "network_findings": [],
+                    "quota_pressure": [],
+                    "correlated_hypotheses": [{"title": "Deploy recente pode estar correlacionado com os alarmes", "detail": "Há sinais simultâneos.", "confidence": "medium"}],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    result = runner.invoke(
+        app,
+        [
+            "export-github-issue",
+            "--report-path",
+            str(report_path),
+            "--repo",
+            "tharlesson-platform/aws-sre-doctor",
+            "--preview-path",
+            str(preview_path),
+            "--dry-run",
+        ],
+    )
+    assert result.exit_code == 0, result.stdout
+    assert preview_path.exists()
+    assert "Preview gerado sem criar issue remota." in result.stdout

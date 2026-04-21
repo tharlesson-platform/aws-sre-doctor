@@ -15,6 +15,9 @@ O objetivo e acelerar o bootstrap do diagnostico, capturando estado inicial de:
 - `IAM roles`
 - `EFS`
 - `STS`, `ECR`, `Secrets Manager`, `SSM` e `CloudWatch`
+- sinais adicionais de rede em `route tables`, `security groups`, `NACLs` e atributos DNS do VPC
+- alarmes ativos e sinais de mudança recente
+- quotas relevantes por servico quando a coleta de quota esta habilitada
 
 ## Pre-requisitos
 
@@ -39,6 +42,20 @@ Depois:
 
 ```bash
 aws-sre-doctor analyze --input-path incident_snapshot.live.json --environment prod
+```
+
+Se quiser enriquecer com quotas:
+
+```bash
+aws-sre-doctor collect-live \
+  --output-path incident_snapshot.live.json \
+  --environment prod \
+  --region us-east-1 \
+  --workload-type ecs \
+  --workload-name payments-api \
+  --cluster prod-apps \
+  --ecs-service payments-api \
+  --collect-quotas
 ```
 
 ## Exemplos por servico
@@ -125,6 +142,10 @@ aws-sre-doctor collect-live \
 - consolidar estado inicial de varios recursos
 - registrar dependencia de APIs AWS
 - descobrir target groups, roles e EFS a partir de ECS quando possivel
+- registrar alarmes ativos relevantes para o workload
+- sintetizar mudancas recentes para correlacao inicial
+- apontar sinais adicionais de rede e DNS do VPC
+- medir quotas relevantes com base em uso e limite regional quando possivel
 - salvar um snapshot reutilizavel para handoff e postmortem
 
 ## O que ainda exige validacao humana
@@ -139,3 +160,4 @@ aws-sre-doctor collect-live \
 - usar `--workload-type eks` sem `--eks-cluster-name`
 - rodar com credencial sem permissao de leitura e interpretar `access_denied` como falha do servico
 - coletar apenas um target group e esquecer o load balancer ou vice-versa
+- esquecer `--collect-quotas` e depois esperar dados de quota no snapshot
