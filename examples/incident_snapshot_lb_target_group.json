@@ -1,0 +1,82 @@
+{
+  "environment": "prod",
+  "workload": {
+    "type": "service",
+    "name": "payments-edge",
+    "cluster": ""
+  },
+  "metadata": {
+    "collection_mode": "snapshot-template"
+  },
+  "ecs": {
+    "service_desired_count": 0,
+    "service_running_count": 0,
+    "deployments_in_progress": 0,
+    "task_failures": [],
+    "secrets_pull_errors": []
+  },
+  "ec2": {
+    "instances": []
+  },
+  "eks": {
+    "cluster_name": "",
+    "status": "",
+    "version": "",
+    "nodegroups": [],
+    "addons": []
+  },
+  "rds": {
+    "instances": []
+  },
+  "alb": {
+    "load_balancers": [
+      {
+        "name": "payments-edge-alb",
+        "type": "application",
+        "state": "provisioning",
+        "scheme": "internet-facing"
+      }
+    ],
+    "listeners": [
+      {
+        "protocol": "HTTPS",
+        "port": 443
+      }
+    ],
+    "target_groups": [
+      {
+        "name": "payments-edge-tg",
+        "healthy_targets": 0,
+        "unhealthy_targets": 4,
+        "health_check_path": "/readyz"
+      }
+    ]
+  },
+  "dependencies": {
+    "sts": "ok",
+    "ecr": "ok",
+    "secrets_manager": "ok",
+    "ssm": "ok",
+    "cloudwatch": "ok"
+  },
+  "efs": {
+    "mount_error": "",
+    "file_systems": []
+  },
+  "network": {
+    "route_mismatch": false,
+    "sg_mismatch": true,
+    "nacl_mismatch": false,
+    "dns_private_resolution": "ok",
+    "observed_subnets": [],
+    "observed_security_groups": [],
+    "observed_vpc_ids": []
+  },
+  "iam": {
+    "task_execution_role": "ok",
+    "task_role": "ok",
+    "irsa": "ok",
+    "roles": []
+  },
+  "quotas": []
+}

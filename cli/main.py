@@ -10,6 +10,8 @@ from rich.panel import Panel
 
 from checks.catalog import run_checks
 from core.config import load_environment_config
+from core.live_collectors import AWSLiveCollector
+from core.logging import configure_logging
 from reporters.renderers import render_html, render_markdown
 from core.snapshots import build_snapshot_template
 
@@ -27,14 +29,26 @@ def version() -> None:
     console.print("0.1.0")
 
 
+def _write_snapshot(output_path: Path, payload: dict) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    if output_path.suffix.lower() in {".yaml", ".yml"}:
+        rendered = yaml.safe_dump(payload, sort_keys=False, allow_unicode=False)
+    else:
+        rendered = json.dumps(payload, indent=2)
+    output_path.write_text(rendered, encoding="utf-8")
+
+
 @app.command()
 def init_snapshot(
     output_path: Path = typer.Option(Path("incident_snapshot.json"), help="Path for the starter snapshot JSON/YAML."),
     environment: str = typer.Option("prod", help="Environment name."),
     workload_name: str = typer.Option("payments-api", help="Workload or service name."),
-    workload_type: str = typer.Option("ecs", help="ecs|eks|service"),
+    workload_type: str = typer.Option("auto", help="auto|ecs|ec2|eks|rds|service"),
     cluster: str = typer.Option("prod-apps", help="Cluster or control plane name."),
-    scenario: str = typer.Option("healthy-baseline", help="healthy-baseline|ecs-degraded"),
+    scenario: str = typer.Option(
+        "healthy-baseline",
+        help="healthy-baseline|ecs-degraded|ec2-degraded|eks-degraded|rds-degraded|lb-target-group-degraded|iam-degraded|multi-service-degraded",
+    ),
 ) -> None:
     try:
         snapshot = build_snapshot_template(
@@ -47,12 +61,7 @@ def init_snapshot(
     except ValueError as exc:
         raise typer.BadParameter(str(exc)) from exc
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    if output_path.suffix.lower() in {".yaml", ".yml"}:
-        payload = yaml.safe_dump(snapshot, sort_keys=False, allow_unicode=False)
-    else:
-        payload = json.dumps(snapshot, indent=2)
-    output_path.write_text(payload, encoding="utf-8")
+    _write_snapshot(output_path, snapshot)
 
     panel = Panel.fit(
         (
@@ -65,6 +74,59 @@ def init_snapshot(
     )
     console.print(panel)
     console.print("Preencha somente os campos que representam o sintoma real do incidente.")
+
+
+@app.command()
+def collect_live(
+    output_path: Path = typer.Option(Path("incident_snapshot.live.json"), help="Where the collected snapshot should be saved."),
+    environment: str = typer.Option("prod", help="Environment name."),
+    region: str = typer.Option("us-east-1", help="AWS region for collection."),
+    profile: str | None = typer.Option(None, help="AWS profile name."),
+    workload_type: str = typer.Option("service", help="ecs|ec2|eks|rds|service"),
+    workload_name: str = typer.Option("payments", help="Logical workload or service name."),
+    cluster: str = typer.Option("", help="Cluster or shared control plane name."),
+    ecs_service: str | None = typer.Option(None, help="ECS service name to inspect."),
+    eks_cluster_name: str | None = typer.Option(None, help="EKS cluster name to inspect."),
+    ec2_instance_id: list[str] | None = typer.Option(None, help="EC2 instance id. Can be repeated."),
+    rds_instance_id: list[str] | None = typer.Option(None, help="RDS instance id. Can be repeated."),
+    load_balancer_arn: list[str] | None = typer.Option(None, help="Load balancer ARN. Can be repeated."),
+    target_group_arn: list[str] | None = typer.Option(None, help="Target group ARN. Can be repeated."),
+    iam_role_arn: list[str] | None = typer.Option(None, help="IAM role ARN. Can be repeated."),
+    efs_file_system_id: list[str] | None = typer.Option(None, help="EFS file system id. Can be repeated."),
+    collect_dependencies: bool = typer.Option(True, help="Probe STS, ECR, Secrets Manager, SSM and CloudWatch."),
+    collect_quotas: bool = typer.Option(False, help="Keep placeholder metadata for quotas collection."),
+) -> None:
+    configure_logging()
+    collector = AWSLiveCollector(region_name=region, profile=profile)
+    snapshot = collector.collect_snapshot(
+        environment=environment,
+        workload_type=workload_type,
+        workload_name=workload_name,
+        cluster=cluster,
+        ecs_service=ecs_service,
+        eks_cluster_name=eks_cluster_name,
+        ec2_instance_ids=ec2_instance_id,
+        rds_instance_ids=rds_instance_id,
+        load_balancer_arns=load_balancer_arn,
+        target_group_arns=target_group_arn,
+        iam_role_arns=iam_role_arn,
+        efs_file_system_ids=efs_file_system_id,
+        collect_dependencies=collect_dependencies,
+        collect_quotas=collect_quotas,
+    )
+    _write_snapshot(output_path, snapshot)
+
+    panel = Panel.fit(
+        (
+            f"snapshot={output_path.resolve()}\n"
+            f"region={region}\n"
+            f"workload={workload_name}\n"
+            f"next=aws-sre-doctor analyze --input-path {output_path} --environment {environment}"
+        ),
+        title="AWS SRE Doctor Live Collection",
+    )
+    console.print(panel)
+    console.print("Snapshot live coletado com boto3 e salvo para analise offline ou handoff.")
 
 
 @app.command()

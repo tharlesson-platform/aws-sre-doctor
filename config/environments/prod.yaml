@@ -1,5 +1,10 @@
 quota_hot_threshold: 0.85
 ecs_running_ratio_critical: 0.5
+ec2_cpu_hot_threshold: 85
+rds_storage_hot_threshold: 0.85
 dependency_ok_values:
   - ok
   - healthy
+  - available
+  - active
+  - running

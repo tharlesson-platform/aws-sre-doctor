@@ -1,0 +1,95 @@
+{
+  "environment": "prod",
+  "workload": {
+    "type": "eks",
+    "name": "payments-cluster",
+    "cluster": "payments-eks-prod"
+  },
+  "metadata": {
+    "collection_mode": "snapshot-template"
+  },
+  "ecs": {
+    "service_desired_count": 0,
+    "service_running_count": 0,
+    "deployments_in_progress": 0,
+    "task_failures": [],
+    "secrets_pull_errors": []
+  },
+  "ec2": {
+    "instances": []
+  },
+  "eks": {
+    "cluster_name": "payments-eks-prod",
+    "status": "ACTIVE",
+    "version": "1.29",
+    "health_issues": [],
+    "nodegroups": [
+      {
+        "name": "payments-ng-a",
+        "status": "DEGRADED",
+        "desired_size": 4,
+        "min_size": 2,
+        "max_size": 6,
+        "issues": [
+          {
+            "code": "AutoScalingGroupInstanceRefreshActive"
+          }
+        ]
+      }
+    ],
+    "addons": [
+      {
+        "name": "vpc-cni",
+        "status": "DEGRADED",
+        "version": "v1.18.3-eksbuild.1",
+        "issues": [
+          {
+            "code": "InsufficientNumberOfReplicas"
+          }
+        ]
+      }
+    ]
+  },
+  "rds": {
+    "instances": []
+  },
+  "alb": {
+    "load_balancers": [],
+    "listeners": [],
+    "target_groups": []
+  },
+  "dependencies": {
+    "sts": "ok",
+    "ecr": "ok",
+    "secrets_manager": "ok",
+    "ssm": "ok",
+    "cloudwatch": "ok"
+  },
+  "efs": {
+    "mount_error": "",
+    "file_systems": []
+  },
+  "network": {
+    "route_mismatch": false,
+    "sg_mismatch": false,
+    "nacl_mismatch": false,
+    "dns_private_resolution": "fail",
+    "observed_subnets": [
+      "subnet-eks-a",
+      "subnet-eks-b"
+    ],
+    "observed_security_groups": [
+      "sg-eks-cluster"
+    ],
+    "observed_vpc_ids": [
+      "vpc-prod001"
+    ]
+  },
+  "iam": {
+    "task_execution_role": "ok",
+    "task_role": "ok",
+    "irsa": "missing_oidc_provider",
+    "roles": []
+  },
+  "quotas": []
+}

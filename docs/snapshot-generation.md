@@ -31,6 +31,8 @@ aws-sre-doctor init-snapshot \
 
 ## Opcao 2: preencher com dados reais do AWS CLI
 
+Se voce preferir partir diretamente de boto3, consulte `docs/live-collection.md`.
+
 ### ECS service
 
 Colete o estado do service:
@@ -87,6 +89,62 @@ Mapeamento:
 - quantidade de `healthy` -> `alb.target_groups[*].healthy_targets`
 - quantidade de `unhealthy` -> `alb.target_groups[*].unhealthy_targets`
 - path do health check configurado -> `alb.target_groups[*].health_check_path`
+
+### EC2
+
+```bash
+aws ec2 describe-instances --instance-ids i-0123456789abcdef0
+aws ec2 describe-instance-status --instance-ids i-0123456789abcdef0 --include-all-instances
+```
+
+Mapeamento:
+
+- `State.Name` -> `ec2.instances[*].state`
+- `InstanceStatus.Status` -> `ec2.instances[*].instance_status`
+- `SystemStatus.Status` -> `ec2.instances[*].system_status`
+- `SecurityGroups[].GroupId` -> `ec2.instances[*].security_groups`
+
+### EKS
+
+```bash
+aws eks describe-cluster --name payments-eks-prod
+aws eks list-nodegroups --cluster-name payments-eks-prod
+aws eks describe-nodegroup --cluster-name payments-eks-prod --nodegroup-name payments-ng-a
+aws eks list-addons --cluster-name payments-eks-prod
+aws eks describe-addon --cluster-name payments-eks-prod --addon-name vpc-cni
+```
+
+Mapeamento:
+
+- `cluster.status` -> `eks.status`
+- `nodegroup.status` -> `eks.nodegroups[*].status`
+- `addon.status` -> `eks.addons[*].status`
+- `identity.oidc.issuer` -> `iam.irsa`
+
+### RDS
+
+```bash
+aws rds describe-db-instances --db-instance-identifier payments-prod-db
+```
+
+Mapeamento:
+
+- `DBInstanceStatus` -> `rds.instances[*].status`
+- `AllocatedStorage` -> `rds.instances[*].allocated_storage_gb`
+- `PendingModifiedValues` -> `rds.instances[*].pending_modified_values`
+
+### IAM
+
+```bash
+aws iam get-role --role-name payments-task-execution-role
+aws iam list-attached-role-policies --role-name payments-task-execution-role
+```
+
+Mapeamento:
+
+- attached policies -> `iam.roles[*].attached_policies`
+- trust principal -> `iam.roles[*].trust_principals`
+- findings manuais ou observados -> `iam.roles[*].findings`
 
 ### Reachability para APIs AWS
 
@@ -157,9 +215,10 @@ Registre so o que estiver perto do limite:
 1. Gere a base com `init-snapshot`
 2. Consulte `describe-services` e preencha ECS
 3. Consulte `describe-target-health` e preencha ALB
-4. Rode testes basicos para STS/ECR/Secrets/SSM/CloudWatch
-5. Registre apenas os sintomas confirmados
-6. Execute:
+4. Consulte EC2, EKS ou RDS quando fizerem parte do incidente
+5. Rode testes basicos para STS/ECR/Secrets/SSM/CloudWatch
+6. Registre apenas os sintomas confirmados
+7. Execute:
 
 ```bash
 aws-sre-doctor analyze --input-path incident_snapshot.json --environment prod

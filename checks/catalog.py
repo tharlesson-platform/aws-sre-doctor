@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from checks import alb, dependencies, ecs, efs, iam, network, quotas
+from checks import alb, dependencies, ec2, ecs, efs, eks, iam, network, quotas, rds
 from core.engine import aggregate_report
 
 
 CHECK_PIPELINE = [
     ecs.run,
+    ec2.run,
+    eks.run,
+    rds.run,
     alb.run,
     dependencies.run,
     efs.run,

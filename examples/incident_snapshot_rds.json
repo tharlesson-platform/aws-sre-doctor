@@ -1,0 +1,77 @@
+{
+  "environment": "prod",
+  "workload": {
+    "type": "rds",
+    "name": "payments-db",
+    "cluster": ""
+  },
+  "metadata": {
+    "collection_mode": "snapshot-template"
+  },
+  "ecs": {
+    "service_desired_count": 0,
+    "service_running_count": 0,
+    "deployments_in_progress": 0,
+    "task_failures": [],
+    "secrets_pull_errors": []
+  },
+  "ec2": {
+    "instances": []
+  },
+  "eks": {
+    "cluster_name": "",
+    "status": "",
+    "version": "",
+    "nodegroups": [],
+    "addons": []
+  },
+  "rds": {
+    "instances": [
+      {
+        "db_instance_identifier": "payments-prod-db",
+        "status": "modifying",
+        "engine": "postgres",
+        "multi_az": true,
+        "publicly_accessible": false,
+        "storage_encrypted": true,
+        "allocated_storage_gb": 500,
+        "storage_utilization": 0.91,
+        "pending_modified_values": {
+          "DBInstanceClass": "db.r6g.2xlarge"
+        }
+      }
+    ]
+  },
+  "alb": {
+    "load_balancers": [],
+    "listeners": [],
+    "target_groups": []
+  },
+  "dependencies": {
+    "sts": "ok",
+    "ecr": "ok",
+    "secrets_manager": "ok",
+    "ssm": "ok",
+    "cloudwatch": "ok"
+  },
+  "efs": {
+    "mount_error": "",
+    "file_systems": []
+  },
+  "network": {
+    "route_mismatch": false,
+    "sg_mismatch": false,
+    "nacl_mismatch": false,
+    "dns_private_resolution": "ok",
+    "observed_subnets": [],
+    "observed_security_groups": [],
+    "observed_vpc_ids": []
+  },
+  "iam": {
+    "task_execution_role": "ok",
+    "task_role": "ok",
+    "irsa": "ok",
+    "roles": []
+  },
+  "quotas": []
+}

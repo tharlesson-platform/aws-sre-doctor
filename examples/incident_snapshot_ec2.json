@@ -1,0 +1,91 @@
+{
+  "environment": "prod",
+  "workload": {
+    "type": "ec2",
+    "name": "payments-ec2-fleet",
+    "cluster": ""
+  },
+  "metadata": {
+    "collection_mode": "snapshot-template"
+  },
+  "ecs": {
+    "service_desired_count": 0,
+    "service_running_count": 0,
+    "deployments_in_progress": 0,
+    "task_failures": [],
+    "secrets_pull_errors": []
+  },
+  "ec2": {
+    "instances": [
+      {
+        "instance_id": "i-0payments001",
+        "state": "running",
+        "instance_type": "t3.large",
+        "instance_status": "impaired",
+        "system_status": "ok",
+        "cpu_utilization": 92,
+        "subnet_id": "subnet-ec201",
+        "vpc_id": "vpc-prod001",
+        "security_groups": [
+          "sg-ec2app"
+        ]
+      }
+    ]
+  },
+  "eks": {
+    "cluster_name": "",
+    "status": "",
+    "version": "",
+    "nodegroups": [],
+    "addons": []
+  },
+  "rds": {
+    "instances": []
+  },
+  "alb": {
+    "load_balancers": [],
+    "listeners": [],
+    "target_groups": []
+  },
+  "dependencies": {
+    "sts": "ok",
+    "ecr": "ok",
+    "secrets_manager": "ok",
+    "ssm": "ok",
+    "cloudwatch": "ok"
+  },
+  "efs": {
+    "mount_error": "",
+    "file_systems": []
+  },
+  "network": {
+    "route_mismatch": false,
+    "sg_mismatch": true,
+    "nacl_mismatch": false,
+    "dns_private_resolution": "ok",
+    "observed_subnets": [
+      "subnet-ec201"
+    ],
+    "observed_security_groups": [
+      "sg-ec2app"
+    ],
+    "observed_vpc_ids": [
+      "vpc-prod001"
+    ]
+  },
+  "iam": {
+    "task_execution_role": "ok",
+    "task_role": "ok",
+    "irsa": "ok",
+    "roles": [
+      {
+        "name": "payments-ec2-role",
+        "status": "review_required",
+        "findings": [
+          "missing_ssm_permissions"
+        ]
+      }
+    ]
+  },
+  "quotas": []
+}

@@ -1,16 +1,16 @@
 # AWS SRE Doctor
 
-CLI profissional para troubleshooting operacional em AWS, com foco em diagnóstico rápido e redução de MTTR.
+CLI profissional para troubleshooting operacional em AWS, com foco em diagnóstico rápido, coleta live e redução de MTTR.
 
 ## Problema que resolve
 
-- Times de SRE perdem tempo consolidando sintomas espalhados entre ECS, ALB, IAM, quotas e rede.
+- Times de SRE perdem tempo consolidando sintomas espalhados entre ECS, EC2, EKS, RDS, ALB, IAM, quotas e rede.
 - Incidentes recorrentes exigem hipóteses rápidas, severidade clara e próximos passos acionáveis.
 - A ferramenta entrega um diagnóstico resumido e detalhado pronto para operação e handoff.
 
 ## Arquitetura
 
-- CLI com Typer para execução local e futura automação em pipeline.
+- CLI com Typer para execução local, coleta live via boto3 e futura automação em pipeline.
 - Checks desacoplados em `checks/` para evoluir troubleshooting por domínio.
 - Reporters em markdown/json/html para operação, documentação e portfólio técnico.
 
@@ -41,12 +41,37 @@ python -m pip install -e .[dev]
 aws-sre-doctor analyze --input-path examples/incident_snapshot.json --environment prod
 ```
 
+## Coleta live via boto3
+
+```bash
+aws-sre-doctor collect-live \
+  --output-path incident_snapshot.live.json \
+  --environment prod \
+  --region us-east-1 \
+  --workload-type ecs \
+  --workload-name payments-api \
+  --cluster prod-apps \
+  --ecs-service payments-api
+```
+
+Depois rode:
+
+```bash
+aws-sre-doctor analyze --input-path incident_snapshot.live.json --environment prod
+```
+
 ## Reproducao guiada
 
 - Primeiro passo recomendado:
   - `aws-sre-doctor analyze --input-path examples/incident_snapshot_healthy.json --environment prod --report-name healthy`
 - Segundo passo recomendado:
   - `aws-sre-doctor analyze --input-path examples/incident_snapshot.json --environment prod --report-name degraded`
+- Terceiro passo recomendado:
+  - `aws-sre-doctor analyze --input-path examples/incident_snapshot_ec2.json --environment prod --report-name ec2`
+  - `aws-sre-doctor analyze --input-path examples/incident_snapshot_eks.json --environment prod --report-name eks`
+  - `aws-sre-doctor analyze --input-path examples/incident_snapshot_rds.json --environment prod --report-name rds`
+  - `aws-sre-doctor analyze --input-path examples/incident_snapshot_lb_target_group.json --environment prod --report-name lb`
+  - `aws-sre-doctor analyze --input-path examples/incident_snapshot_iam.json --environment prod --report-name iam`
 - Para reproduzir com mais seguranca:
   - consulte `examples/README.md`
   - siga `docs/reproduction-guide.md`
@@ -76,6 +101,15 @@ aws-sre-doctor init-snapshot \
   --scenario ecs-degraded
 ```
 
+Agora tambem existem cenarios prontos para:
+
+- `ec2-degraded`
+- `eks-degraded`
+- `rds-degraded`
+- `lb-target-group-degraded`
+- `iam-degraded`
+- `multi-service-degraded`
+
 Depois rode:
 
 ```bash
@@ -104,22 +138,32 @@ Um fluxo bem pratico fica assim:
 
 Guia detalhado com comandos AWS CLI: `docs/snapshot-generation.md`
 
+Guia de coleta live via boto3: `docs/live-collection.md`
+
 ## Exemplos reais
 
 - `aws-sre-doctor analyze --input-path examples/incident_snapshot.json --environment prod`
 - `AWS_REGION=us-east-1 AWS_PROFILE=platform aws-sre-doctor analyze --input-path examples/incident_snapshot.json --environment dev`
 - `aws-sre-doctor init-snapshot --output-path incident_snapshot.yaml --environment stage --workload-name billing-api --cluster stage-apps`
 - `aws-sre-doctor analyze --input-path examples/incident_snapshot_healthy.json --environment prod --report-name healthy`
+- `aws-sre-doctor analyze --input-path examples/incident_snapshot_ec2.json --environment prod --report-name ec2`
+- `aws-sre-doctor analyze --input-path examples/incident_snapshot_eks.json --environment prod --report-name eks`
+- `aws-sre-doctor analyze --input-path examples/incident_snapshot_rds.json --environment prod --report-name rds`
+- `aws-sre-doctor analyze --input-path examples/incident_snapshot_lb_target_group.json --environment prod --report-name lb`
+- `aws-sre-doctor analyze --input-path examples/incident_snapshot_iam.json --environment prod --report-name iam`
+- `aws-sre-doctor analyze --input-path examples/incident_snapshot_multi_service.json --environment prod --report-name multi`
+- `aws-sre-doctor collect-live --output-path incident_snapshot.live.json --environment prod --region us-east-1 --workload-type eks --workload-name payments-cluster --eks-cluster-name payments-eks-prod`
 
 ## Como isso ajuda SREs no dia a dia
 
-- Acelera triagem inicial quando ECS, ALB e dependências AWS falham em conjunto.
+- Acelera triagem inicial quando ECS, EC2, EKS, RDS, ALB e dependências AWS falham em conjunto.
 - Padroniza diagnóstico resumido, causas prováveis e próximos passos para reduzir MTTR.
+- Permite partir de dados reais com coleta live via boto3 quando o incidente ja esta acontecendo.
 - Cria artefatos reutilizáveis em postmortems, runbooks e demos técnicas.
 
 ## Roadmap
 
-- Coleta live via boto3 e integração opcional com Slack.
+- Enriquecer coleta live com mais sinais de rede e quotas.
 - Correlação automática com eventos de deploy e alarmes.
 - Export de diagnóstico para GitHub Issues.
 

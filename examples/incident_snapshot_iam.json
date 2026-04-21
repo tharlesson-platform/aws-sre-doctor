@@ -1,0 +1,90 @@
+{
+  "environment": "prod",
+  "workload": {
+    "type": "service",
+    "name": "payments-iam-path",
+    "cluster": ""
+  },
+  "metadata": {
+    "collection_mode": "snapshot-template"
+  },
+  "ecs": {
+    "service_desired_count": 0,
+    "service_running_count": 0,
+    "deployments_in_progress": 0,
+    "task_failures": [],
+    "secrets_pull_errors": []
+  },
+  "ec2": {
+    "instances": []
+  },
+  "eks": {
+    "cluster_name": "",
+    "status": "",
+    "version": "",
+    "nodegroups": [],
+    "addons": []
+  },
+  "rds": {
+    "instances": []
+  },
+  "alb": {
+    "load_balancers": [],
+    "listeners": [],
+    "target_groups": []
+  },
+  "dependencies": {
+    "sts": "access_denied",
+    "ecr": "ok",
+    "secrets_manager": "access_denied",
+    "ssm": "ok",
+    "cloudwatch": "ok"
+  },
+  "efs": {
+    "mount_error": "",
+    "file_systems": []
+  },
+  "network": {
+    "route_mismatch": false,
+    "sg_mismatch": false,
+    "nacl_mismatch": false,
+    "dns_private_resolution": "ok",
+    "observed_subnets": [],
+    "observed_security_groups": [],
+    "observed_vpc_ids": []
+  },
+  "iam": {
+    "task_execution_role": "missing_ecr_permissions",
+    "task_role": "missing_secrets_manager_permissions",
+    "irsa": "sts_assume_role_denied",
+    "roles": [
+      {
+        "name": "payments-task-execution-role",
+        "status": "review_required",
+        "findings": [
+          "missing_ecs_execution_policy"
+        ],
+        "attached_policies": [
+          "CloudWatchLogsFullAccess"
+        ],
+        "trust_principals": [
+          "ecs-tasks.amazonaws.com"
+        ]
+      },
+      {
+        "name": "payments-irsa-role",
+        "status": "review_required",
+        "findings": [
+          "missing_oidc_trust"
+        ],
+        "attached_policies": [
+          "AmazonS3ReadOnlyAccess"
+        ],
+        "trust_principals": [
+          "ec2.amazonaws.com"
+        ]
+      }
+    ]
+  },
+  "quotas": []
+}
