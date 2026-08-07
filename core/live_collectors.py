@@ -1120,22 +1120,32 @@ class AWSLiveCollector:
         operation: Callable[..., Any] = getattr(client, operation_name)
         try:
             response = operation(**kwargs)
-            self.logger.info("aws_call_ok", service=service_name, operation=operation_name)
+            self._log("info", "aws_call_ok", service=service_name, operation=operation_name)
             return "ok", response, None
         except (EndpointConnectionError, ConnectTimeoutError, ReadTimeoutError) as exc:
             detail = exc.__class__.__name__
-            self.logger.warning("aws_call_timeout", service=service_name, operation=operation_name, detail=detail)
+            self._log("warning", "aws_call_timeout", service=service_name, operation=operation_name, detail=detail)
             return "timeout", None, detail
         except (NoCredentialsError, PartialCredentialsError) as exc:
             detail = exc.__class__.__name__
-            self.logger.warning("aws_call_credentials_error", service=service_name, operation=operation_name, detail=detail)
+            self._log("warning", "aws_call_credentials_error", service=service_name, operation=operation_name, detail=detail)
             return "credentials_error", None, detail
         except ClientError as exc:
             code = exc.response.get("Error", {}).get("Code", "ClientError")
             status = "access_denied" if any(tag in code.lower() for tag in ["accessdenied", "unauthorized"]) else "error"
-            self.logger.warning("aws_call_client_error", service=service_name, operation=operation_name, code=code)
+            self._log("warning", "aws_call_client_error", service=service_name, operation=operation_name, code=code)
             return status, None, code
         except BotoCoreError as exc:
             detail = exc.__class__.__name__
-            self.logger.warning("aws_call_error", service=service_name, operation=operation_name, detail=detail)
+            self._log("warning", "aws_call_error", service=service_name, operation=operation_name, detail=detail)
             return "error", None, detail
+
+    def _log(self, level: str, event: str, **fields: Any) -> None:
+        """Best-effort logging; diagnostics must not break data collection."""
+        try:
+            getattr(self.logger, level)(event, **fields)
+        except (OSError, ValueError):
+            # Test capture streams and short-lived CLI streams can be closed
+            # while a collector is still unwinding. The AWS result remains
+            # valid even when its diagnostic emission is unavailable.
+            return
