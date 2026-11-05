@@ -7,20 +7,30 @@ on:
     branches:
       - main
       - master
+      - fix/awsdoctor-isolated-python-ci
 
 permissions:
   contents: read
 
+env:
+  SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
 jobs:
   guardrails:
     name: guardrails
-    runs-on: ubuntu-latest
+    runs-on: ["awsdoctor-guardrails-run-${{ github.run_id }}"]
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+      - name: Confirm reviewed source
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
       - name: Validate baseline files and workflow refs
         shell: bash
         run: |
-          python - <<'PY'
+          python3 - <<'PY'
           from pathlib import Path
           import re
           import sys

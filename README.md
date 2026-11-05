@@ -257,3 +257,20 @@ Ao reutilizar ou derivar este material:
 
 **Tharlesson**  
 GitHub: https://github.com/tharlesson
+
+
+## CI isolado de validação
+
+CI e guardrails preservam os gatilhos de pull request e fazem checkout explícito
+do head (`pull_request.head.sha`, ou `github.sha` em push), sem persistir credenciais.
+Checkout e setup-python estão fixados por SHA; cada job tem prazo de 20 minutos
+e label exclusivo `awsdoctor-<job>-run-<run_id>`. CI mantém todos os pushes, incluindo
+a branch piloto `fix/awsdoctor-isolated-python-ci`; guardrails acrescenta essa branch sem remover main/master.
+
+O piloto usa Python 3.12 em runner Linux efêmero, sem configuração ou credenciais
+AWS. Os testes locais são validados em container com rede desativada após instalar
+as dependências, e a resolução Python atual é conferida por pip-audit. Isso não
+autoriza chamadas cloud, adoção de forks, registro de runners ou execução em produção.
+Admissão do SHA e política de contribuições externas são controladas separadamente
+no host e não são implementadas nesta mudança. Para rollback, não publicar o delta
+ou restaurar o workflow anteriormente revisado; não contornar os gates.
